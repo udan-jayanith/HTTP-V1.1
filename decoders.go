@@ -1,0 +1,69 @@
+package HTTPNav
+
+import (
+	"bufio"
+	"strings"
+	"net/url"
+)
+
+func decodeRequestLine(reader *bufio.Reader) (RequestLine, error) {
+	requestLine := RequestLine{}
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return requestLine, err
+	}
+
+	var lastSanedIndex int
+	//this decode the HTTP method
+	httpMethod := ""
+	for i, char := range line {
+		lastSanedIndex = i
+		if(char == ' '){
+			break
+		}
+
+		httpMethod += string(char)
+	}
+	requestLine.Method = HTTPRequestMethod(strings.TrimSpace(httpMethod))
+
+	//this decode the request target
+	lastSanedIndex++
+	requestTarget := ""
+	for line[lastSanedIndex] != ' ' {
+		requestTarget += string(line[lastSanedIndex])
+		lastSanedIndex++
+	}
+	urlObj, err := url.Parse(strings.TrimSpace(requestTarget))
+	if err != nil {
+		return requestLine, err
+	}
+	
+
+	//this decode the protocol
+	requestLine.Protocol = strings.TrimSpace(line[lastSanedIndex+1:])
+
+	return requestLine, err
+}
+
+func decodeHeader(reader *bufio.Reader) (map[string]string, error){
+	header := make(map[string]string, 9)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			return header, err
+		}
+		line = strings.TrimSpace(line)
+		if line == ""{
+			return header, err
+		}
+
+		for i, char := range line{
+			if char == ':' {
+				header[strings.TrimSpace(line[:i])] = strings.TrimSpace(line[i+1:]) 
+				break
+			}
+		}
+	}
+}
+
+//func decodeBody(reader *bufio.Reader)
