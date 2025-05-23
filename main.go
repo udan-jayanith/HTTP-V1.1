@@ -76,6 +76,11 @@ func (target *URL) parse(line string, startingIndex int) int {
 	return startingIndex
 }
 
+func (target *URL) GetQuery(field string) (string, bool){
+	value, ok := target.QueryParams[field]
+	return value, ok
+}
+
 type RequestLine struct {
 	Method   HTTPRequestMethod
 	Target   URL
