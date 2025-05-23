@@ -3,7 +3,6 @@ package HTTPNav
 import (
 	"bufio"
 	"strings"
-	"net/url"
 )
 
 func decodeRequestLine(reader *bufio.Reader) (RequestLine, error) {
@@ -18,7 +17,7 @@ func decodeRequestLine(reader *bufio.Reader) (RequestLine, error) {
 	httpMethod := ""
 	for i, char := range line {
 		lastSanedIndex = i
-		if(char == ' '){
+		if char == ' ' {
 			break
 		}
 
@@ -28,24 +27,17 @@ func decodeRequestLine(reader *bufio.Reader) (RequestLine, error) {
 
 	//this decode the request target
 	lastSanedIndex++
-	requestTarget := ""
-	for line[lastSanedIndex] != ' ' {
-		requestTarget += string(line[lastSanedIndex])
-		lastSanedIndex++
-	}
-	urlObj, err := url.Parse(strings.TrimSpace(requestTarget))
-	if err != nil {
-		return requestLine, err
-	}
-	
+	url := URL{}
+	lastSanedIndex = url.parse(line, lastSanedIndex)
+	requestLine.Target = url
 
 	//this decode the protocol
-	requestLine.Protocol = strings.TrimSpace(line[lastSanedIndex+1:])
+	requestLine.Protocol = strings.TrimSpace(line[lastSanedIndex:])
 
 	return requestLine, err
 }
 
-func decodeHeader(reader *bufio.Reader) (map[string]string, error){
+func decodeHeader(reader *bufio.Reader) (map[string]string, error) {
 	header := make(map[string]string, 9)
 	for {
 		line, err := reader.ReadString('\n')
@@ -53,13 +45,13 @@ func decodeHeader(reader *bufio.Reader) (map[string]string, error){
 			return header, err
 		}
 		line = strings.TrimSpace(line)
-		if line == ""{
+		if line == "" {
 			return header, err
 		}
 
-		for i, char := range line{
+		for i, char := range line {
 			if char == ':' {
-				header[strings.TrimSpace(line[:i])] = strings.TrimSpace(line[i+1:]) 
+				header[strings.TrimSpace(line[:i])] = strings.TrimSpace(line[i+1:])
 				break
 			}
 		}

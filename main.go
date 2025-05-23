@@ -3,7 +3,7 @@ package HTTPNav
 import (
 	"bufio"
 	"net"
-	"net/url"
+	"strings"
 )
 
 type Server struct {
@@ -33,10 +33,52 @@ var (
 	Patch HTTPRequestMethod = "PATCH"
 )
 
+type URL struct {
+	RequestTarget string
+	Path          string
+	QueryParams   map[string]string
+}
+
+func (target *URL) parse(line string, startingIndex int) int {
+	target.QueryParams = make(map[string]string, 1)
+	questionMarkFound := false
+	key := ""
+	value := ""
+	equalSignFound := false
+	//need improvements hear
+	for ; line[startingIndex] != ' '; startingIndex++ {
+		target.RequestTarget += string(line[startingIndex])
+		if line[startingIndex] == '?' {
+			questionMarkFound = true
+			continue
+		} else if !questionMarkFound {
+			target.Path += string(line[startingIndex])
+		} else if questionMarkFound {
+			if line[startingIndex] == '=' {
+				equalSignFound = true
+				continue
+			} else if line[startingIndex] == '&' {
+				target.QueryParams[key] = value
+				key = ""
+				value = ""
+				equalSignFound = false
+				continue
+			} else if !equalSignFound {
+				key += string(line[startingIndex])
+			} else if equalSignFound {
+				value += string(line[startingIndex])
+			}
+		}
+	}
+	if strings.TrimSpace(key) != "" {
+		target.QueryParams[key] = value
+	}
+	return startingIndex
+}
 
 type RequestLine struct {
 	Method   HTTPRequestMethod
-	Target   url.URL
+	Target   URL
 	Protocol string
 }
 
@@ -45,7 +87,7 @@ type HTTPRequest struct {
 	Header      map[string]string
 }
 
-func (ht *HTTPRequest) GetHeader(field string) string{
+func (ht *HTTPRequest) GetHeader(field string) string {
 	return ht.Header[field]
 }
 
@@ -93,6 +135,5 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 	httpRequest.Header = header
-
 
 }
