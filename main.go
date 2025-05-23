@@ -140,5 +140,4 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 	httpRequest.Header = header
-
 }
