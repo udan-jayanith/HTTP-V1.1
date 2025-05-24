@@ -8,11 +8,12 @@ import (
 )
 
 type Server struct {
-	handlers map[string]func()
+	handlers map[string]func(string, *HTTPRequest)
 }
 
 type HTTPRequestMethod string
 
+//Http methods.
 var (
 	/*The GET method requests a representation of the specified resource. Requests using GET should only retrieve data and should not contain a request content.*/
 	Get HTTPRequestMethod = "GET"
@@ -81,6 +82,7 @@ func (target *RequestTarget) parse(line string, startingIndex int) int {
 	return startingIndex
 }
 
+//GetQuery returns RequestTarget query param value for given field.
 func (target *RequestTarget) GetQuery(field string) (string, bool) {
 	value, ok := target.QueryParams[field]
 	return value, ok
@@ -97,6 +99,7 @@ type HTTPRequest struct {
 	Header      map[string]string
 }
 
+//GetHeader returns header value for a give field.
 func (ht *HTTPRequest) GetHeader(field string) string {
 	return ht.Header[field]
 }
@@ -104,15 +107,16 @@ func (ht *HTTPRequest) GetHeader(field string) string {
 // GetServer returns a new Server
 func GetServer() *Server {
 	return &Server{
-		handlers: make(map[string]func(), 18),
+		handlers: make(map[string]func(string, *HTTPRequest), 18),
 	}
 }
 
 // HandelFunc takes HTTPRequestMethod, requestTarget and a handler. If requests httpMethod and requestTarget matches the handler handler will execute.
-func (s *Server) HandelFunc(method HTTPRequestMethod, requestTarget string, handler func()) {
+func (s *Server) HandleFunc(method HTTPRequestMethod, requestTarget string, handler func(string, *HTTPRequest)) {
 	s.handlers[requestTarget] = handler
 }
 
+//StartServer start the server(start listing).
 func (s *Server) StartServer(port string) error {
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
@@ -125,11 +129,11 @@ func (s *Server) StartServer(port string) error {
 			continue
 		}
 
-		handleConnection(conn)
+		s.handleConnection(conn)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	httpRequest := HTTPRequest{}
@@ -145,4 +149,8 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 	httpRequest.Header = header
+	callback, ok := s.handlers[httpRequest.RequestLine.Target.Path]
+	if ok{
+		callback("", &httpRequest)
+	}
 }
