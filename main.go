@@ -7,8 +7,10 @@ import (
 	"strings"
 )
 
+type HTTPCallbackHandleFunc func(string, *HTTPRequest)
+
 type Server struct {
-	handlers map[string]func(string, *HTTPRequest)
+	handlers map[string]HTTPCallbackHandleFunc
 }
 
 type HTTPRequestMethod string
@@ -97,6 +99,7 @@ type RequestLine struct {
 type HTTPRequest struct {
 	RequestLine RequestLine
 	Header      map[string]string
+	reader *bufio.Reader
 }
 
 //GetHeader returns header value for a give field.
@@ -104,15 +107,19 @@ func (ht *HTTPRequest) GetHeader(field string) string {
 	return ht.Header[field]
 }
 
+func (ht *HTTPRequest) GetReader(){
+	
+}
+
 // GetServer returns a new Server
 func GetServer() *Server {
 	return &Server{
-		handlers: make(map[string]func(string, *HTTPRequest), 18),
+		handlers: make(map[string]HTTPCallbackHandleFunc, 18),
 	}
 }
 
 // HandelFunc takes HTTPRequestMethod, requestTarget and a handler. If requests httpMethod and requestTarget matches the handler handler will execute.
-func (s *Server) HandleFunc(method HTTPRequestMethod, requestTarget string, handler func(string, *HTTPRequest)) {
+func (s *Server) HandleFunc(method HTTPRequestMethod, requestTarget string, handler HTTPCallbackHandleFunc) {
 	s.handlers[requestTarget] = handler
 }
 
@@ -149,6 +156,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 		return
 	}
 	httpRequest.Header = header
+	httpRequest.reader = reader
 	callback, ok := s.handlers[httpRequest.RequestLine.Target.Path]
 	if ok{
 		callback("", &httpRequest)

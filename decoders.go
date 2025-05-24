@@ -2,6 +2,7 @@ package HTTPNav
 
 import (
 	"bufio"
+	"encoding/json"
 	"strings"
 )
 
@@ -58,4 +59,10 @@ func decodeHeader(reader *bufio.Reader) (map[string]string, error) {
 	}
 }
 
-//func decodeBody(reader *bufio.Reader)
+func (ht *HTTPRequest) GetBodyAsText() {
+
+}
+
+func (ht *HTTPRequest) GetBodyAsJson(v *any) {
+	json.NewDecoder(ht.reader).Decode(v)
+}
