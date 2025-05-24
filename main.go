@@ -100,15 +100,19 @@ type HTTPRequest struct {
 	RequestLine RequestLine
 	Header      map[string]string
 	reader *bufio.Reader
+	isGetReaderUsed bool
 }
 
 //GetHeader returns header value for a give field.
-func (ht *HTTPRequest) GetHeader(field string) string {
-	return ht.Header[field]
+func (ht *HTTPRequest) GetHeader(field string) (string, bool) {
+	value, ok := ht.Header[field]
+	return value, ok
 }
 
-func (ht *HTTPRequest) GetReader(){
-	
+//GetReader() return the reader after reading the header.
+func (ht *HTTPRequest) GetReader() *bufio.Reader{
+	ht.isGetReaderUsed = true
+	return ht.reader
 }
 
 // GetServer returns a new Server
