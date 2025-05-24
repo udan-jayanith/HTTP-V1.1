@@ -1,3 +1,6 @@
+/*
+HTTPNav is a HTTP 1.1 go package.
+*/
 package HTTPNav
 
 import (
