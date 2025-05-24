@@ -27,7 +27,7 @@ func decodeRequestLine(reader *bufio.Reader) (RequestLine, error) {
 
 	//this decode the request target
 	lastSanedIndex++
-	url := URL{}
+	url := RequestTarget{}
 	lastSanedIndex = url.parse(line, lastSanedIndex)
 	requestLine.Target = url
 

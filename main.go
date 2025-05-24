@@ -3,6 +3,7 @@ package HTTPNav
 import (
 	"bufio"
 	"net"
+	"net/url"
 	"strings"
 )
 
@@ -33,40 +34,44 @@ var (
 	Patch HTTPRequestMethod = "PATCH"
 )
 
-type URL struct {
+type RequestTarget struct {
 	RequestTarget string
 	Path          string
 	QueryParams   map[string]string
 }
 
-func (target *URL) parse(line string, startingIndex int) int {
+func (target *RequestTarget) parse(line string, startingIndex int) int {
+	for ; line[startingIndex] != ' '; startingIndex++ {
+		target.RequestTarget += string(line[startingIndex])
+	}
+
+	target.RequestTarget, _ = url.QueryUnescape(strings.TrimSpace(target.RequestTarget))
+
 	target.QueryParams = make(map[string]string, 1)
 	questionMarkFound := false
 	key := ""
 	value := ""
 	equalSignFound := false
-	//need improvements hear
-	for ; line[startingIndex] != ' '; startingIndex++ {
-		target.RequestTarget += string(line[startingIndex])
-		if line[startingIndex] == '?' {
+	for _, char := range target.RequestTarget {
+		if char == '?' {
 			questionMarkFound = true
 			continue
 		} else if !questionMarkFound {
-			target.Path += string(line[startingIndex])
+			target.Path += string(char)
 		} else if questionMarkFound {
-			if line[startingIndex] == '=' {
+			if char == '=' {
 				equalSignFound = true
 				continue
-			} else if line[startingIndex] == '&' {
-				target.QueryParams[key] = value
+			} else if char == '&' {
+				target.QueryParams[strings.TrimSpace(key)] = strings.TrimSpace(value)
 				key = ""
 				value = ""
 				equalSignFound = false
 				continue
 			} else if !equalSignFound {
-				key += string(line[startingIndex])
+				key += string(char)
 			} else if equalSignFound {
-				value += string(line[startingIndex])
+				value += string(char)
 			}
 		}
 	}
@@ -76,14 +81,14 @@ func (target *URL) parse(line string, startingIndex int) int {
 	return startingIndex
 }
 
-func (target *URL) GetQuery(field string) (string, bool){
+func (target *RequestTarget) GetQuery(field string) (string, bool) {
 	value, ok := target.QueryParams[field]
 	return value, ok
 }
 
 type RequestLine struct {
 	Method   HTTPRequestMethod
-	Target   URL
+	Target   RequestTarget
 	Protocol string
 }
 
