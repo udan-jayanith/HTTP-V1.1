@@ -1,7 +1,7 @@
 package HTTPNav_test
 
 import (
-	httpNav "HTTPNav"
+	httpNav "github.com/udan-jayanith/HTTPNav"
 	"fmt"
 	"testing"
 )

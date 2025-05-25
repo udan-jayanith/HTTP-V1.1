@@ -1,4 +1,4 @@
-module HTTPNav
+module github.com/udan-jayanith/HTTPNav
 
 go 1.24.1
 
