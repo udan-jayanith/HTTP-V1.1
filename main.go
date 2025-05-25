@@ -6,19 +6,25 @@ package HTTPNav
 import (
 	"bufio"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 )
 
-type HTTPCallbackHandleFunc func(string, *HTTPRequest)
+type HTTPCallbackHandleFunc func(*HTTPResponse, *HTTPRequest)
+
+type HandlerData struct {
+	callback   HTTPCallbackHandleFunc
+	httpMethod HTTPRequestMethod
+}
 
 type Server struct {
-	handlers map[string]HTTPCallbackHandleFunc
+	handlers map[string]HandlerData
 }
 
 type HTTPRequestMethod string
 
-//Http methods.
+// Http methods.
 var (
 	/*The GET method requests a representation of the specified resource. Requests using GET should only retrieve data and should not contain a request content.*/
 	Get HTTPRequestMethod = "GET"
@@ -87,7 +93,7 @@ func (target *RequestTarget) parse(line string, startingIndex int) int {
 	return startingIndex
 }
 
-//GetQuery returns RequestTarget query param value for given field.
+// GetQuery returns RequestTarget query param value for given field.
 func (target *RequestTarget) GetQuery(field string) (string, bool) {
 	value, ok := target.QueryParams[field]
 	return value, ok
@@ -100,20 +106,20 @@ type RequestLine struct {
 }
 
 type HTTPRequest struct {
-	RequestLine RequestLine
-	Header      map[string]string
-	reader *bufio.Reader
+	RequestLine     RequestLine
+	Header          map[string]string
+	reader          *bufio.Reader
 	isGetReaderUsed bool
 }
 
-//GetHeader returns header value for a give field.
+// GetHeader returns header value for a give field.
 func (ht *HTTPRequest) GetHeader(field string) (string, bool) {
 	value, ok := ht.Header[field]
 	return value, ok
 }
 
-//GetReader() return the reader after reading the header.
-func (ht *HTTPRequest) GetReader() *bufio.Reader{
+// GetReader() return the reader after reading the header.
+func (ht *HTTPRequest) GetReader() *bufio.Reader {
 	ht.isGetReaderUsed = true
 	return ht.reader
 }
@@ -121,16 +127,19 @@ func (ht *HTTPRequest) GetReader() *bufio.Reader{
 // GetServer returns a new Server
 func GetServer() *Server {
 	return &Server{
-		handlers: make(map[string]HTTPCallbackHandleFunc, 18),
+		handlers: make(map[string]HandlerData, 4),
 	}
 }
 
 // HandelFunc takes HTTPRequestMethod, requestTarget and a handler. If requests httpMethod and requestTarget matches the handler handler will execute.
 func (s *Server) HandleFunc(method HTTPRequestMethod, requestTarget string, handler HTTPCallbackHandleFunc) {
-	s.handlers[requestTarget] = handler
+	s.handlers[requestTarget] = HandlerData{
+		callback:   handler,
+		httpMethod: method,
+	}
 }
 
-//StartServer start the server(start listing).
+// StartServer start the server(start listing).
 func (s *Server) StartServer(port string) error {
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
@@ -164,8 +173,21 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 	httpRequest.Header = header
 	httpRequest.reader = reader
-	callback, ok := s.handlers[httpRequest.RequestLine.Target.Path]
-	if ok{
-		callback("", &httpRequest)
+
+	httpResponse := &HTTPResponse{}
+
+	handlerData, ok := s.handlers[httpRequest.RequestLine.Target.Path]
+	if ok {
+		if handlerData.httpMethod == httpRequest.RequestLine.Method {
+			httpResponse.ResponseLine.SetStatusCode(http.StatusOK)
+			handlerData.callback(httpResponse, &httpRequest)
+		} else {
+			httpResponse.ResponseLine.SetStatusCode(http.StatusMethodNotAllowed)
+		}
+
+	} else {
+		httpResponse.ResponseLine.SetStatusCode(http.StatusNotFound)
 	}
+
+	conn.Write(httpResponse.EncodeHTTPResponse())
 }
