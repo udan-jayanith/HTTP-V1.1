@@ -2,7 +2,7 @@
 
 HTTPNav is a lightweight HTTP/1.1 Go package designed to simplify HTTP request and response handling. It provides custom encoders and decoders to streamline working with HTTP headers and payloads.
 
-Note: Their is not HTTPS support.
+Note: HTTPNav does not support HTTPS.
 
 ## Features
 * 🧰 Custom encoders and decoders for HTTP headers and bodies
