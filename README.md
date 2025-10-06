@@ -61,10 +61,7 @@ err := request.GetBodyAsJson(&v)
 GetBodyAsJson parses the JSON-encoded data and stores the result in the value pointed to by v. If Content-Type is not in the header GetBodyAsJson returns ContentTypeHeaderNotFound. Else if Content-Type != "application/json" GetBodyAsJson returns InvalidContentType. It uses GetBodyAsBytes in underlying layer.
 
 **To see other functionalities see
-[HTTPNav Go Doc](https://pkg.go.dev/github.com/udan-jayanith/HTTPNav) or simply see source code.**
-
-## Contributing
-Contributions are welcome! Feel free to open issues or submit pull requests.
+[HTTP Go Doc](https://pkg.go.dev/github.com/udan-jayanith/HTTPNav) or simply see source code.**
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE.md](https://github.com/udan-jayanith/HTTPNav/blob/main/LICENSE.md) file for details.
